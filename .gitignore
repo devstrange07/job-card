@@ -1,0 +1,42 @@
+# Node and frontend build output
+node_modules/
+dist/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local secrets and environment overrides
+.env
+.env.*
+!.env.example
+!**/.env.example
+!.env.*.example
+!**/.env.*.example
+
+# Python virtual environments, caches, and test output
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local databases and logs
+*.db
+*.sqlite
+*.sqlite3
+*.log
+
+# Supabase local-only state
+supabase/.temp/
+supabase/.branches/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
