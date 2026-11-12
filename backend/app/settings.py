@@ -15,6 +15,7 @@ class Settings:
     supabase_publishable_key: str
     supabase_secret_key: str
     bootstrap_owner_email: str
+    frontend_url: str
     cors_origins: tuple[str, ...]
 
     @classmethod
@@ -26,6 +27,7 @@ class Settings:
             supabase_publishable_key=os.getenv("SUPABASE_PUBLISHABLE_KEY", ""),
             supabase_secret_key=os.getenv("SUPABASE_SECRET_KEY", ""),
             bootstrap_owner_email=os.getenv("BOOTSTRAP_OWNER_EMAIL", "").strip().lower(),
+            frontend_url=os.getenv("FRONTEND_URL", "").rstrip("/"),
             cors_origins=tuple(origin.strip() for origin in raw_origins.split(",") if origin.strip()),
         )
 

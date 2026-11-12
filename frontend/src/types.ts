@@ -28,12 +28,20 @@ export interface Payment {
   time: string
 }
 
+export interface RewardRecipient {
+  role: 'companion' | 'referrer'
+  phone?: string
+  savedKey?: string
+  name: string
+}
+
 export interface Job {
   id: string
   version?: number
   jobNumber: number
   customerName: string
-  customerPhone: string
+  customerPhone?: string
+  customerId?: string
   createdAt: string
   timeLabel: string
   status: JobStatus
@@ -44,9 +52,13 @@ export interface Job {
   note?: string
   correctionReason?: string
   invoiceReference?: string
+  invoiceRecordedAt?: string
+  invoiceFirstRecordedAt?: string
   finalBilledTotalMinor?: number
   discrepancyReason?: string
   payments: Payment[]
+  accompanyingCount?: number
+  rewardRecipients?: RewardRecipient[]
 }
 
 export interface CatalogProduct {

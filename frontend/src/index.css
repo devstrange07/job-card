@@ -1,29 +1,39 @@
 :root {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color: #182a27;
-  background: #f5f7f4;
+  color: var(--ink);
+  background: var(--canvas);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --ink: #182a27;
-  --muted: #7f8e89;
-  --faint: #aab4b0;
-  --line: #e7ebe8;
-  --canvas: #f5f7f4;
-  --paper: #ffffff;
-  --green: #176d54;
-  --green-dark: #123d33;
-  --green-soft: #e9f4ee;
-  --green-wash: #f1f8f3;
-  --amber: #af7934;
-  --amber-soft: #fff5e6;
-  --blue: #557c9e;
-  --blue-soft: #eef4f9;
-  --red: #b55d55;
-  --red-soft: #fbefed;
+  --canvas: #F7F5EF;
+  --sage: #9CAF88;
+  --tomato: #E8412C;
+
+  --paper: #fffdfa;
+  --ink: #242921;
+  --muted: #596052;
+  --faint: #646b5e;
+  --line: #e4e0d6;
+  --control-line: #858878;
+  --sage-deep: #293629;
+  --sage-dark: #43563a;
+  --sage-soft: #e6ebdd;
+  --sage-wash: #f1f3eb;
+  --sage-light: #d1dbc8;
+  --on-tomato: #1d0d09;
+  --tomato-hover: color-mix(in srgb, var(--tomato) 90%, var(--canvas));
+  --red: #a52d20;
+  --red-soft: #fbe9e4;
+  --red-line: #efc6bd;
+  --amber: #79531e;
+  --amber-soft: #f8eddc;
+  --amber-line: #e9d5b4;
+  --blue: #405d70;
+  --blue-soft: #e9eff2;
+  --focus-ring: var(--tomato);
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-  --shadow: 0 12px 36px rgba(22, 46, 39, 0.07), 0 1px 3px rgba(22, 46, 39, 0.04);
+  --shadow: 0 12px 36px rgb(36 41 33 / 7%), 0 1px 3px rgb(36 41 33 / 4%);
   font-size: 14px;
   font-weight: 400;
 }
@@ -31,7 +41,6 @@
 * { box-sizing: border-box; }
 
 html {
-  min-width: 320px;
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
   overscroll-behavior: none;
@@ -40,7 +49,6 @@ html {
 
 body {
   margin: 0;
-  min-width: 320px;
   min-height: 100dvh;
   overscroll-behavior: none;
   background: var(--canvas);
@@ -50,8 +58,9 @@ button, input, textarea, select { font: inherit; }
 button, a, [role='button'] { touch-action: manipulation; }
 button { color: inherit; }
 input, textarea, select { font-size: 16px; }
-button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid rgba(40, 135, 101, 0.24); outline-offset: 2px; }
-::selection { background: rgba(79, 157, 121, 0.2); }
+a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+input::placeholder, textarea::placeholder { color: var(--faint); opacity: 1; }
+::selection { color: var(--sage-deep); background: var(--sage); }
 
 #root { min-height: 100dvh; }
 
