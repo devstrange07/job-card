@@ -265,6 +265,7 @@ async def initialize_store(
         {
             "p_owner_user_id": user["id"],
             "p_store_name": body.store_name,
+            "p_owner_email": email,
             "p_currency_code": body.currency_code,
             "p_timezone": body.timezone,
             "p_owner_display_name": email.split("@")[0][:120],
