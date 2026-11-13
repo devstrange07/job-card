@@ -40,6 +40,17 @@ class SupabaseRest:
         )
         if response.is_error:
             if response.status_code < 500:
+                try:
+                    error = response.json()
+                except ValueError:
+                    error = None
+                if isinstance(error, dict) and error.get("message") in {
+                    "Enter a name for each recipient without a saved name",
+                    "Enter the new customer’s name",
+                    "Job changed; refresh before retrying",
+                    "Only returned jobs can be edited",
+                }:
+                    raise HTTPException(status_code=response.status_code, detail=error["message"])
                 raise HTTPException(status_code=response.status_code, detail="Supabase rejected the request")
             raise HTTPException(status_code=503, detail="Supabase is temporarily unavailable")
         if not response.content:
@@ -55,6 +66,10 @@ class SupabaseRest:
         if isinstance(result, list) and result:
             return result[0]
         return result or {}
+
+    async def update(self, table: str, params: dict[str, str], payload: dict[str, Any]) -> list[dict[str, Any]]:
+        result = await self.request("PATCH", table, params=params, payload=payload)
+        return result if isinstance(result, list) else []
 
     async def rpc(self, function: str, payload: dict[str, Any]) -> dict[str, Any]:
         result = await self.request("POST", f"rpc/{function}", payload=payload)

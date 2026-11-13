@@ -1,9 +1,55 @@
 from __future__ import annotations
 
+import re
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+
+def normalize_phone(value: str) -> str:
+    cleaned = re.sub(r"[\s().-]", "", value)
+    if re.fullmatch(r"[0-9]{10}", cleaned):
+        cleaned = f"+91{cleaned}"
+    elif re.fullmatch(r"91[0-9]{10}", cleaned):
+        cleaned = f"+{cleaned}"
+    if not re.fullmatch(r"\+[1-9][0-9]{7,14}", cleaned):
+        raise ValueError("Enter a valid phone number with country code")
+    return cleaned
+
+
+class PhoneLookupInput(BaseModel):
+    store_id: UUID
+    phone: str = Field(max_length=40)
+    _normalize_phone = field_validator("phone")(normalize_phone)
+
+
+class CustomerLookupInput(PhoneLookupInput):
+    offset: int = Field(default=0, ge=0)
+
+
+class RewardRecipientInput(BaseModel):
+    role: Literal["companion", "referrer"]
+    phone: str | None = Field(default=None, max_length=40)
+    saved_key: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    name: str | None = Field(default=None, max_length=120)
+
+    @field_validator("phone")
+    @classmethod
+    def normalized_phone(cls, value: str | None) -> str | None:
+        return normalize_phone(value) if value is not None else None
+
+    @model_validator(mode="after")
+    def one_identifier(self) -> "RewardRecipientInput":
+        if bool(self.phone) == bool(self.saved_key):
+            raise ValueError("Provide a phone or a saved recipient")
+        return self
+
+
+class JobAttributionInput(BaseModel):
+    accompanying_count: int = Field(default=0, ge=0, le=100)
+    reward_recipients: list[RewardRecipientInput] = Field(default_factory=list, max_length=21)
+    submission_key: UUID | None = None
 
 
 class LineInput(BaseModel):
@@ -29,17 +75,19 @@ class ContributorInput(BaseModel):
     contribution: Literal["sales", "promoter", "assisted"] = "assisted"
 
 
-class CreateJobInput(BaseModel):
+class CreateJobInput(JobAttributionInput):
     store_id: UUID
-    customer_phone: str = Field(pattern=r"^\+[1-9][0-9]{7,14}$")
+    customer_phone: str = Field(max_length=40)
     customer_name: str | None = Field(default=None, max_length=120)
     lines: list[LineInput] = Field(min_length=1, max_length=50)
     charges: list[ChargeInput] = Field(default_factory=list, max_length=20)
     contributors: list[ContributorInput] = Field(default_factory=list, max_length=20)
     staff_note: str | None = Field(default=None, max_length=2000)
 
+    _normalize_phone = field_validator("customer_phone")(normalize_phone)
 
-class UpdateJobInput(BaseModel):
+
+class UpdateJobInput(JobAttributionInput):
     store_id: UUID
     expected_version: int = Field(ge=1)
     lines: list[LineInput] = Field(min_length=1, max_length=50)
@@ -79,6 +127,23 @@ class InitializeStoreInput(BaseModel):
     store_name: str = Field(min_length=1, max_length=120)
     currency_code: str = Field(default="INR", pattern=r"^[A-Z]{3}$")
     timezone: str = Field(default="Asia/Kolkata", max_length=80)
+
+
+class InviteStaffInput(BaseModel):
+    store_id: UUID
+    email: str = Field(min_length=3, max_length=254)
+    display_name: str = Field(min_length=1, max_length=120)
+    role: Literal["salesperson", "cashier", "promoter", "manager"]
+
+
+class AcceptStaffInvitationInput(BaseModel):
+    invitation_id: UUID
+
+
+class UpdateStaffInput(BaseModel):
+    store_id: UUID
+    role: Literal["salesperson", "cashier", "promoter", "manager"] | None = None
+    status: Literal["active", "suspended"] | None = None
 
 
 class ProductInput(BaseModel):

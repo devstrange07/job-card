@@ -10,17 +10,17 @@ ROLE_PERMISSIONS: dict[str, set[str]] = {
     "admin": {"*"},
     "manager": {
         "jobs.read_store", "jobs.checkout", "jobs.return", "jobs.complete", "jobs.cancel",
-        "jobs.create", "jobs.submit", "payments.record_cash", "payments.record_upi",
+        "jobs.create", "jobs.submit", "customers.read_history", "customers.read_phone", "payments.record_cash", "payments.record_upi",
         "jobs.price_override", "payments.confirm_upi", "payments.reverse", "billing.record", "billing.approve_discrepancy",
         "catalog.read", "catalog.manage", "staff.read", "staff.manage", "audit.read",
     },
     "cashier": {
         "jobs.read_store", "jobs.checkout", "jobs.return", "jobs.complete",
         "payments.record_cash", "payments.record_upi", "payments.confirm_upi", "billing.record",
-        "catalog.read", "staff.read",
+        "catalog.read", "staff.read", "customers.read_phone",
     },
     "salesperson": {
-        "jobs.create", "jobs.read_own", "jobs.edit_own", "jobs.submit",
+        "jobs.create", "jobs.read_own", "jobs.edit_own", "jobs.submit", "customers.read_history",
         "payments.record_cash", "payments.record_upi", "catalog.read", "staff.read",
     },
     "promoter": {"jobs.read_assigned", "catalog.read"},
