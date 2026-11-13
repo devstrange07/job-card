@@ -329,8 +329,8 @@ function Workspace({ demo = false, accessToken, onSignOut }: { demo?: boolean; a
   const [jobOpenedByPointer, setJobOpenedByPointer] = useState(false)
   const [editingJob, setEditingJob] = useState<Job | null>(null)
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false)
-  const [toast, setToast] = useState<{ message: string; kind: ToastKind; visible: boolean } | null>(null)
-  const toastTimers = useRef<number[]>([])
+  const [toast, setToast] = useState<{ message: string; kind: ToastKind; jobId?: string } | null>(null)
+  const toastTimer = useRef<number>(undefined)
   const [updateReady, setUpdateReady] = useState(false)
   const [now, setNow] = useState(() => new Date())
   const { greeting, date } = storeClock(now, demo ? 'Asia/Kolkata' : store?.store?.timezone)
@@ -366,7 +366,7 @@ function Workspace({ demo = false, accessToken, onSignOut }: { demo?: boolean; a
     return () => window.removeEventListener('counterline:update-available', announce)
   }, [])
 
-  useEffect(() => () => { toastTimers.current.forEach(window.clearTimeout) }, [])
+  useEffect(() => () => { window.clearTimeout(toastTimer.current) }, [])
 
   useEffect(() => {
     if (!demo) return
@@ -471,6 +471,7 @@ function Workspace({ demo = false, accessToken, onSignOut }: { demo?: boolean; a
   }
 
   const selectJob = (id: string, trigger?: HTMLButtonElement) => {
+    setToast((current) => current?.jobId ? null : current)
     setSelectedId(id)
     if (focusedJobView) setJobTrigger(trigger ?? null)
     else setMobileDetailOpen(true)
@@ -484,14 +485,15 @@ function Workspace({ demo = false, accessToken, onSignOut }: { demo?: boolean; a
     selectJob(id, trigger)
   }
 
-  const showToast = (message: string, kind: ToastKind = 'success') => {
-    toastTimers.current.forEach(window.clearTimeout)
-    toastTimers.current = []
-    setToast({ message, kind, visible: true })
-    toastTimers.current.push(window.setTimeout(() => {
-      setToast((current) => current ? { ...current, visible: false } : null)
-      toastTimers.current.push(window.setTimeout(() => setToast(null), 170))
-    }, kind === 'error' ? 6000 : 3000))
+  const closeFocusedJob = () => {
+    setSelectedId(null)
+    setToast((current) => current?.jobId ? null : current)
+  }
+
+  const showToast = (message: string, kind: ToastKind = 'success', jobId = selected?.id) => {
+    window.clearTimeout(toastTimer.current)
+    setToast({ message, kind, jobId: focusedJobView ? jobId : undefined })
+    toastTimer.current = window.setTimeout(() => setToast(null), kind === 'error' ? 6000 : 3000)
   }
 
   const updateDemoJob = (id: string, updater: (job: Job) => Job) => setJobs((current) => current.map((job) => job.id === id ? { ...updater(job), version: (job.version || 1) + 1 } : job))
@@ -571,7 +573,7 @@ function Workspace({ demo = false, accessToken, onSignOut }: { demo?: boolean; a
         })
         await reload(store.store_id)
       }
-      setSelectedId(input.jobId); setEditingJob(null); setNewJobOpen(false); showToast('Correction saved and returned to checkout'); return
+      setSelectedId(input.jobId); setEditingJob(null); setNewJobOpen(false); showToast('Correction saved and returned to checkout', 'success', input.jobId); return
     }
     if (demo) {
       const nextNumber = Math.max(1048, ...jobs.map((job) => job.jobNumber)) + 1
@@ -603,7 +605,7 @@ function Workspace({ demo = false, accessToken, onSignOut }: { demo?: boolean; a
       }),
     })
     await reload(store.store_id)
-    openJob(created.id); setEditingJob(null); setNewJobOpen(false); showToast(`Job #${created.job_number} sent to checkout`)
+    openJob(created.id); setEditingJob(null); setNewJobOpen(false); showToast(`Job #${created.job_number} sent to checkout`, 'success', created.id)
   }
 
   const transition = async (job: Job, toStatus: JobStatus, reason?: string) => {
@@ -735,11 +737,11 @@ function Workspace({ demo = false, accessToken, onSignOut }: { demo?: boolean; a
 
   const detail = selected && <JobDetail key={`${selected.id}-${selected.status}-${selected.version || 1}-${selected.payments.length}-${selected.invoiceReference || ''}`}
     job={selected} can={can} focused={focusedJobView} onEdit={startEditJob}
-    onClose={() => focusedJobView ? setSelectedId(null) : setMobileDetailOpen(false)}
+    onClose={focusedJobView ? closeFocusedJob : () => setMobileDetailOpen(false)}
     onTransition={transition} onAddPayment={addPayment} onConfirmUpi={confirmUpi} onSaveInvoice={saveInvoice}
     loadLatestInvoice={loadLatestInvoice} toast={showToast}
   />
-  const feedback = toast && <div className="toast-message" data-kind={toast.kind} data-visible={toast.visible} role={toast.kind === 'error' ? 'alert' : 'status'}>
+  const feedback = toast && <div className="toast-message" data-kind={toast.kind} role={toast.kind === 'error' ? 'alert' : 'status'}>
     {toast.kind === 'error' ? <CircleAlert size={17} aria-hidden="true" /> : <CheckCircle2 size={17} aria-hidden="true" />}
     {toast.message}
   </div>
@@ -829,7 +831,10 @@ function Workspace({ demo = false, accessToken, onSignOut }: { demo?: boolean; a
       </footer>
     </div>
 
-    {focusedJobView && selected ? <FocusedJobDialog key={selected.id} trigger={jobTrigger} onClose={() => setSelectedId(null)}>{detail}{feedback}</FocusedJobDialog> : feedback}
+    {!toast?.jobId && feedback}
+    {focusedJobView && selected && <FocusedJobDialog key={selected.id} trigger={jobTrigger} onClose={closeFocusedJob}>
+      {detail}{toast?.jobId === selected.id && feedback}
+    </FocusedJobDialog>}
     {newJobOpen && <NewJobDialog key={editingJob?.id || 'new'} products={products} charges={charges} members={members} demo={demo} pointer={jobOpenedByPointer} timeZone={store?.store?.timezone} existingJob={editingJob || undefined} onClose={() => { setNewJobOpen(false); setEditingJob(null) }} onSubmit={createJob} lookupCustomer={lookupCustomer} lookupRecipient={lookupRecipient} loadVisit={loadVisit} showPhones={can('customers.read_phone')} />}
   </div>
 }
@@ -1104,8 +1109,6 @@ function NewJobDialog({ products, charges, members, demo, pointer, timeZone, exi
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const phoneInput = useRef<HTMLInputElement>(null)
-  const phoneLabel = useRef<HTMLSpanElement>(null)
-  const phoneOrigin = useRef<{ rect: DOMRect; fontSize: number }>(null)
   const lookupRequest = useRef(0)
   const nameInput = useRef<HTMLInputElement>(null)
   const dialogTitle = useRef<HTMLHeadingElement>(null)
@@ -1148,26 +1151,6 @@ function NewJobDialog({ products, charges, members, demo, pointer, timeZone, exi
     phoneInput.current?.focus()
     return () => { if (element.open) element.close() }
   }, [])
-
-  useLayoutEffect(() => {
-    const origin = phoneOrigin.current
-    const label = phoneLabel.current
-    phoneOrigin.current = null
-    if (!origin || !label || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const target = label.getBoundingClientRect()
-    const x = origin.rect.left + (origin.rect.width - target.width) / 2 - target.left
-    const y = origin.rect.top + (origin.rect.height - target.height) / 2 - target.top
-    const styles = getComputedStyle(label)
-    const scale = origin.fontSize / parseFloat(styles.fontSize)
-    const animation = label.animate([
-      { transform: `translate(${x}px, ${y}px) scale(${scale})` },
-      { transform: 'none' },
-    ], {
-      duration: 180,
-      easing: styles.getPropertyValue('--ease-out').trim(),
-    })
-    return () => animation.cancel()
-  }, [dockedPhone])
 
   const phoneForSubmit = dockedPhone
   const quote = jobQuote({ lines: lines.map((line) => ({ ...line, contributor: '' })), charges: jobCharges })
@@ -1212,16 +1195,12 @@ function NewJobDialog({ products, charges, members, demo, pointer, timeZone, exi
     }
   }
 
-  const confirmPhone = (number: string, animate: boolean) => {
-    const input = phoneInput.current
-    if (animate && input && showPhones) phoneOrigin.current = {
-      rect: input.getBoundingClientRect(), fontSize: parseFloat(getComputedStyle(input).fontSize),
-    }
+  const confirmPhone = (number: string) => {
     setDockedPhone(number)
     void findCustomer(number)
   }
 
-  const enterLocalPhone = (value: string, animate = false) => {
+  const enterLocalPhone = (value: string) => {
     const local = localPhoneDigits(value)
     if (local.startsWith('+')) {
       setInternational(true)
@@ -1232,7 +1211,7 @@ function NewJobDialog({ products, charges, members, demo, pointer, timeZone, exi
     if (!/^\d{0,10}$/.test(local)) return
     setPhone(local)
     setError('')
-    if (local.length === 10) confirmPhone(`+91${local}`, animate)
+    if (local.length === 10) confirmPhone(`+91${local}`)
   }
 
   const editPhone = () => {
@@ -1341,7 +1320,7 @@ function NewJobDialog({ products, charges, members, demo, pointer, timeZone, exi
             setError('Enter the phone number with its country code, starting with +.')
             return
           }
-          confirmPhone(number, false)
+          confirmPhone(number)
         }
         return
       }
@@ -1413,7 +1392,7 @@ function NewJobDialog({ products, charges, members, demo, pointer, timeZone, exi
       </div>
         <div className="job-heading-actions">
           {showCustomer && dockedPhone && !existingJob && !visit && <button className="customer-phone-chip" type="button" onClick={editPhone} disabled={busy} aria-label="Change customer phone number">
-            <span ref={phoneLabel} className="customer-phone-label">{showPhones ? displayCustomerPhone(dockedPhone) : 'Change number'}</span><Pencil size={13} aria-hidden="true" />
+            <span className="customer-phone-label">{showPhones ? displayCustomerPhone(dockedPhone) : 'Change number'}</span><Pencil size={13} aria-hidden="true" />
           </button>}
           <button className="icon-button" type="button" onClick={close} disabled={busy} aria-label={visit ? 'Close visit' : historyOpen ? 'Close customer history' : 'Close job editor'}><X size={18} /></button>
         </div>

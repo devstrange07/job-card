@@ -1,4 +1,4 @@
-const CACHE_NAME = 'counterline-shell-v3'
+const CACHE_NAME = 'counterline-shell-v4'
 const SHELL_ASSETS = ['/manifest.webmanifest', '/brand-icon.svg', '/favicon-32.png']
 
 self.addEventListener('install', (event) => {

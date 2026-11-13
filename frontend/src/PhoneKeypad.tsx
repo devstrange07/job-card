@@ -6,10 +6,10 @@ export function PhoneKeypad({ value, label, inputRef, autoFocus, onChange, onEnt
   label: string
   inputRef?: Ref<HTMLInputElement>
   autoFocus?: boolean
-  onChange: (value: string, pointer?: boolean) => void
+  onChange: (value: string) => void
   onEnter?: () => void
 }) {
-  const digit = (key: string) => <button key={key} className="phone-pebble" type="button" onClick={(event) => onChange(value + key, event.detail > 0)}>{key}</button>
+  const digit = (key: string) => <button key={key} className="phone-pebble" type="button" onClick={() => onChange(value + key)}>{key}</button>
 
   return <>
     <div className="phone-entry-display">
